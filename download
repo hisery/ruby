@@ -1,0 +1,63 @@
+require 'rubygems'  # not necessary for Ruby 1.9
+require 'mongo'
+require 'watir'
+require 'json'
+require 'net/http'
+
+## 需配置ruby环境的firefox的watier引擎 geckodriver.exe
+
+# 本地数据库
+local_host = ['local_host:local_port']
+local_option = {
+  database: 'local_database',
+  user: 'local_user',
+  password: 'local_password',
+}
+
+@download_directory_path = "D:\\Download\\DAS\\IMG\\"
+@download_url = ""
+@user = "test"
+@password = "test"
+
+def get_file(id)
+  path = @download_directory_path + id
+  if File.directory?path
+    dir = Dir.open(path)
+    while name = dir.read
+      next if name == "."
+      next if name == ".."
+      return name
+    end
+  end
+  return ""
+end
+
+def download(id)
+  return "" if id.to_s.include?("data:image/")
+  return "" if id.to_s.empty?
+  name = get_file(id)
+  if "".eql?(name)
+    ## download
+    profile = Selenium::WebDriver::Firefox::Profile.new
+    profile['browser.download.folderList'] = 2 # custom location
+    profile['browser.download.dir'] = @download_directory_path + id
+    profile['browser.helperApps.neverAsk.saveToDisk'] = "image/png,image/PNG"
+    capabilities = Selenium::WebDriver::Remote::Capabilities.firefox(accept_insecure_certs: true)
+    Watir.default_timeout = 90
+    @browser = Watir::Browser.new(:firefox, :desired_capabilities => capabilities, :profile => profile)
+    @browser.goto(@download_url)
+    @browser.text_field(:name, 'uid').set(@user)
+    @browser.text_field(:name, 'password').set(@password)
+    @browser.button(:name, 'Submit').click
+  end
+end
+
+begin
+  download("page_id")
+  
+  local.close
+rescue StandardError => err
+  puts('Error: ')
+  puts(err)
+end
+
