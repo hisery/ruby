@@ -1,0 +1,41 @@
+## 0.备份数据到本地
+
+require 'rubygems'  # not necessary for Ruby 1.9
+require 'mongo'
+
+# 远程数据库
+client_host = ['dest_host:dest_port']
+client_options = {
+    database: 'dest_database',
+    user: 'dest_user',
+    password: 'dest_password',
+}
+
+# 本地数据库
+local_host = ["local_host:local_port"]
+local_option = {
+    database:'local_database',
+    user:'local_user',
+    password:'local_password'
+}
+
+begin
+  client = Mongo::Client.new(client_host, client_options)
+  local = Mongo::Client.new(local_host, local_option)
+
+  collections = client.database.collection_names
+  collections.each do |collection|
+    puts(collection)
+
+    local[collection].drop
+    datas = client[collection].find()
+    local[collection].insert_many(datas)
+
+  end
+  client.close
+  local.close
+rescue StandardError => err
+  puts('Error: ')
+  puts(err)
+end
+
